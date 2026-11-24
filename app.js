@@ -46,7 +46,7 @@
 
   // ---------- progress ----------
   let prog = store.get("hr:prog", {});
-  let prefs = Object.assign({ style: "clean", topics: Object.keys(TOPICS), quick: true, extras: false }, store.get("hr:prefs", {}));
+  let prefs = Object.assign({ style: "clean", topics: Object.keys(TOPICS), quick: true, extras: false, look: true }, store.get("hr:prefs", {}));
   const inPlay = (q) => prefs.extras || q.src !== "extra";
   const saveProg = () => store.set("hr:prog", prog);
   const savePrefs = () => store.set("hr:prefs", prefs);
@@ -98,11 +98,17 @@
     };
     const hook = (HOOKS[q.t] || {})[(S.style || prefs.style) === "spicy" ? "spicy" : "clean"];
     const quick = S.quick !== undefined ? S.quick : prefs.quick;
+    if (S.look) return `
+      <div class="qhead"><span class="tag">${esc(TOPICS[q.t])}</span>${q.src === "extra" ? `<span class="tag soft">extra</span>` : ""}<span class="tag soft">${multi ? `${q.a.length} answers` : "1 answer"}</span></div>
+      <h2 class="q">${esc(q.q)}</h2>
+      <div class="opts">${q.o.map((o, i) => `<div class="opt ${q.a.includes(i) ? "right big" : "dim"}"><span class="ol">${q.a.includes(i) ? "✓" : L(i)}</span><span>${q.a.includes(i) ? `<b>${L(i)}.</b> ` : ""}${esc(o)}</span></div>`).join("")}</div>
+      <div class="memo"><p class="memo-h">💡 How to remember it</p><p>${esc(q.why)}</p>${hook ? `<p class="memo-hook">${opts.her ? "Say: " : "♡ "}${esc(hook)}</p>` : ""}</div>
+      ${q.key ? `<p class="keynote">⚠ ${esc(q.key)}</p>` : ""}`;
     return `
       <div class="qhead"><span class="tag">${esc(TOPICS[q.t])}</span>${q.src === "extra" ? `<span class="tag soft">extra</span>` : ""}${opts.her ? "" : `<span class="tag soft">${mastered(q.id) ? "mastered ✓" : rec(q.id).seen ? `${rec(q.id).right}/${rec(q.id).seen} right` : "new"}</span>`}</div>
       <h2 class="q">${esc(q.q)}</h2>
       <p class="hint">${opts.her && !done ? `The right answer${multi ? "s are" : " is"} marked ✓. Don’t tell him (yet).` : multi ? "Choose all that apply." : "Choose all that apply (this one has one answer)."}</p>
-      <div class="opts">${q.o.map((o, i) => `<button type="button" class="opt${optCls(i)}" data-opt="${i}" ${done || opts.her ? "disabled" : ""}><span class="ol">${L(i)}</span><span>${esc(o)}</span>${opts.her && !done && q.a.includes(i) ? `<span class="ok">✓</span>` : ""}</button>`).join("")}</div>
+      <div class="opts">${q.o.map((o, i) => `<button type="button" class="opt${optCls(i)}" data-opt="${i}" ${done || opts.her ? "disabled" : ""}><span class="ol">${L(i)}</span><span>${esc(o)}</span>${opts.her && !done && q.a.includes(i) ? `<span class="ok">✓ RIGHT</span>` : ""}</button>`).join("")}</div>
       ${done ? `
         <div class="verdict ${ok ? "good" : "bad"}">${mochi(ok ? "" : "sad", 54)}<span>${ok ? "Yay, correct! ♡" : `Oopsie. It’s ${q.a.map(L).join(" + ")}`}</span></div>
         ${quick ? `<p class="answer">✓ ${q.a.map((i) => `<b>${L(i)}</b> ${esc(q.o[i])}`).join("<br>✓ ")}</p>` : `<p class="why">${esc(q.why)}</p>`}
@@ -135,6 +141,7 @@
           <button type="button" data-style="clean" aria-pressed="${prefs.style === "clean"}">Clean</button>
           <button type="button" data-style="spicy" aria-pressed="${prefs.style === "spicy"}">Spicy 18+</button>
         </div>
+        <label class="sw look"><input type="checkbox" data-pref="look" ${prefs.look ? "checked" : ""}> <span><b>👀 Look mode</b>: right answers shown straight away, highlighted, with how to remember each one. No testing.</span></label>
         <label class="sw"><input type="checkbox" data-pref="quick" ${prefs.quick ? "checked" : ""}> <span><b>Answers only</b>: no explanations, just the question and the right answer</span></label>
         <label class="sw"><input type="checkbox" data-pref="extras" ${prefs.extras ? "checked" : ""}> <span>Include my 16 extra questions (not from your banks)</span></label>
         <h3>Topics</h3>
@@ -170,12 +177,12 @@
 
   // ---------- solo ----------
   const solo = (onlyWeak) => {
-    const S = { queue: buildQueue(prefs.topics, onlyWeak), i: 0, picks: [], submitted: false, again: {}, t0: Date.now(), answered: 0, right: 0, topics: prefs.topics.slice(), style: prefs.style, quick: prefs.quick, extras: prefs.extras };
+    const S = { look: prefs.look, queue: buildQueue(prefs.topics, onlyWeak), i: 0, picks: [], submitted: !!prefs.look, again: {}, t0: Date.now(), answered: 0, right: 0, topics: prefs.topics.slice(), style: prefs.style, quick: prefs.quick, extras: prefs.extras };
     let lastNudge = Date.now(), roasts = 0;
     const draw = () => {
       if (S.i >= S.queue.length) return finish();
       app.innerHTML = `<main class="wrap">${statsBar(S)}${qCard(S, {})}
-        <div class="actions">${S.submitted ? `<button class="btn" data-next>Next</button>` : `<button class="btn" data-submit ${S.picks.length ? "" : "disabled"}>Check</button>`}<button class="btn ghost" data-home>Stop</button></div></main>`;
+        <div class="actions">${S.look ? `<button class="btn" data-next>Got it, next ♡</button>` : S.submitted ? `<button class="btn" data-next>Next</button>` : `<button class="btn" data-submit ${S.picks.length ? "" : "disabled"}>Check</button>`}<button class="btn ghost" data-home>Stop</button></div></main>`;
     };
     const finish = () => {
       clearInterval(timer);
@@ -190,7 +197,7 @@
         S.submitted = true; S.answered++; if (ok) S.right++;
         requeue(S, id, ok); record(id, ok); draw(); if (ok) hearts(); return;
       }
-      if (ev.target.closest("[data-next]")) { S.i++; S.picks = []; S.submitted = false; return draw(); }
+      if (ev.target.closest("[data-next]")) { if (S.look) { const r = rec(S.queue[S.i]); r.seen++; prog[S.queue[S.i]] = r; saveProg(); S.answered++; } S.i++; S.picks = []; S.submitted = !!S.look; return draw(); }
     };
     startTick(() => {
       const t = app.querySelector(".st-time"); if (t) t.textContent = clock((Date.now() - S.t0) / 1000);
@@ -265,7 +272,7 @@
     }
     const ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     const code = [...Array(6)].map(() => ABC[Math.floor(Math.random() * ABC.length)]).join("");
-    const H = { v: 1, app: "hr", name: a.name || "He", style: prefs.style, quick: prefs.quick, extras: prefs.extras, topics: prefs.topics.slice(), queue: buildQueue(prefs.topics, false), i: 0, picks: [], submitted: false, again: {}, t0: Date.now(), answered: 0, right: 0, msgs: [], seenNext: 0 };
+    const H = { v: 1, app: "hr", look: prefs.look, name: a.name || "He", style: prefs.style, quick: prefs.quick, extras: prefs.extras, topics: prefs.topics.slice(), queue: buildQueue(prefs.topics, false), i: 0, picks: [], submitted: !!prefs.look, again: {}, t0: Date.now(), answered: 0, right: 0, msgs: [], seenNext: 0 };
     app.innerHTML = `<main class="wrap"><p class="hint">Opening the room…</p></main>`;
     apiCall("roomPut", { token: a.token, code, side: "h", data: H }).then((r) => {
       if (!r || !r.ok) { app.innerHTML = `<main class="wrap"><p class="callout">${esc((r && r.error) || "Couldn’t open the room.")}</p><button class="btn" data-home>Home</button></main>`; app.onclick = (ev) => { if (ev.target.closest("[data-home]")) home(); }; return; }
@@ -292,7 +299,7 @@
       const m = { id: Date.now() + ":" + Math.random().toString(36).slice(2, 6), text: String(text).slice(0, 120) };
       mine.msgs = [...(mine.msgs || []), m].slice(-12); seen.add(m.id); put(); toast("You: " + text, "mine");
     };
-    const next = () => { if (!H) return; H.i++; H.picks = []; H.submitted = false; put(); draw(); };
+    const next = () => { if (!H) return; if (H.look) H.answered++; H.i++; H.picks = []; H.submitted = !!H.look; put(); draw(); };
     const reactions = host ? ["❤️", "😘", "🥵", "Hint please", "Got it", "Explain"] : ["😏", "🔥", "💋", "🙄", "Good boy", "Read it again", "Think!"];
 
     const draw = () => {
@@ -308,11 +315,11 @@
         <p class="hint">Waiting for her…</p><div class="actions"><button class="btn ghost" data-home>Cancel</button></div>`;
       else if (H.i >= H.queue.length) inner = `${statsBar(H)}<div class="hero">${mochi("", 110)}</div><h1 class="title">All done, you two! ♡</h1><p class="lede">${H.right} of ${H.answered} right in ${clock((Date.now() - H.t0) / 1000)}.</p>${host ? `<div class="actions"><button class="btn" data-home>Home</button></div>` : ""}`;
       else {
-        const who = host ? `${esc(P.name)} is in` : `${esc(H.name || "He")} is answering`;
+        const who = host ? `${esc(P.name)} is in` : H.look ? `you & ${esc(H.name || "him")}` : `${esc(H.name || "He")} is answering`;
         inner = `<p class="who">${who} · Room ${code}</p>${statsBar(H)}${qCard(H, { her: !host })}
           <div class="actions">${host
-            ? H.submitted ? `<button class="btn" data-next>Next</button>` : `<button class="btn" data-submit ${H.picks.length ? "" : "disabled"}>Check</button>`
-            : H.submitted ? `<button class="btn" data-next>Next question</button>` : `<span class="hint">Waiting for his answer… picks so far: ${H.picks.length ? H.picks.map(L).join(", ") : "none"}</span>`}</div>`;
+            ? H.look ? `<button class="btn" data-next>Got it, next ♡</button>` : H.submitted ? `<button class="btn" data-next>Next</button>` : `<button class="btn" data-submit ${H.picks.length ? "" : "disabled"}>Check</button>`
+            : H.submitted ? `<button class="btn" data-next>${H.look ? "He’s got it, next ♡" : "Next question"}</button>` : `<span class="hint">Waiting for his answer… picks so far: ${H.picks.length ? H.picks.map(L).join(", ") : "none"}</span>`}</div>`;
       }
       const chat = H && (host ? P && P.name : joined) && !err;
       app.innerHTML = `<main class="wrap room">${inner}</main>${chat ? `<div class="chat"><div class="react">${reactions.map((r) => `<button type="button" data-say="${esc(r)}">${esc(r)}</button>`).join("")}</div><form class="msgf" autocomplete="off"><input id="msg" maxlength="120" placeholder="Say something…"><button class="btn small" type="submit">Send</button></form></div>` : ""}`;

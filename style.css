@@ -96,3 +96,18 @@ h3::before { content: "✿ "; }
 .room { padding-bottom: 170px; }
 @media (max-width: 520px) { h1, .title { font-size: 2rem; } }
 @media (prefers-reduced-motion: reduce) { .mochi, .hh, .burst span { animation: none; } }
+/* clearer right answers */
+.opt.right-key { background: #d8f5e5; border: 3px solid #2e9a62; border-style: solid; font-weight: 700; }
+.opt.right-key .ol { background: #2e9a62; color: #fff; }
+.opt .ok { flex: none; background: #2e9a62; color: #fff; font-size: 0.78rem; border-radius: 999px; padding: 0.15rem 0.55rem; align-self: center; }
+.opt.right-key.picked { box-shadow: 0 0 0 3px var(--accent); }
+.opt.picked:not(.right-key) { border-color: var(--accent); }
+.opt.right.big { background: #d8f5e5; border: 3px solid #2e9a62; font-weight: 700; font-size: 1.05rem; }
+.opt.right.big .ol { background: #2e9a62; color: #fff; font-size: 1rem; }
+.opt.right.big b { color: #2e9a62; }
+.opt.dim { opacity: 0.45; }
+.memo { background: #fff; border: 2px solid var(--accent); border-radius: 20px; padding: 0.6rem 1rem; margin: 0.8rem 0; }
+.memo p { margin: 0.25rem 0; }
+.memo-h { font-weight: 700; color: var(--accent-dark); }
+.memo-hook { color: var(--accent-dark); font-style: italic; }
+.sw.look { border-color: var(--accent); background: #ffe0ea; }
