@@ -22,6 +22,28 @@
   const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const L = (i) => "ABCDEFGH"[i];
 
+  // Mochi: our own little bunny with a bow (original drawing)
+  const mochi = (mood, size) => {
+    const happy = mood !== "sad";
+    return `<svg class="mochi${mood ? " " + mood : ""}" width="${size || 110}" height="${size || 110}" viewBox="0 0 120 120" aria-hidden="true">
+      <ellipse cx="42" cy="30" rx="11" ry="26" fill="#fff" stroke="#e9b8c8" stroke-width="2.5" transform="rotate(-12 42 30)"/>
+      <ellipse cx="42" cy="32" rx="5" ry="17" fill="#ffc9d9" transform="rotate(-12 42 32)"/>
+      <ellipse cx="78" cy="30" rx="11" ry="26" fill="#fff" stroke="#e9b8c8" stroke-width="2.5" transform="rotate(12 78 30)"/>
+      <ellipse cx="78" cy="32" rx="5" ry="17" fill="#ffc9d9" transform="rotate(12 78 32)"/>
+      <ellipse cx="60" cy="74" rx="40" ry="34" fill="#fff" stroke="#e9b8c8" stroke-width="2.5"/>
+      ${happy ? `<path d="M44 70 q4 -6 8 0" stroke="#5b3a48" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M68 70 q4 -6 8 0" stroke="#5b3a48" stroke-width="3" fill="none" stroke-linecap="round"/>`
+        : `<circle cx="48" cy="70" r="3.5" fill="#5b3a48"/><circle cx="72" cy="70" r="3.5" fill="#5b3a48"/><path d="M70 62 l8 -3" stroke="#5b3a48" stroke-width="2.5" stroke-linecap="round"/><path d="M50 62 l-8 -3" stroke="#5b3a48" stroke-width="2.5" stroke-linecap="round"/>`}
+      <ellipse cx="38" cy="82" rx="7" ry="4.5" fill="#ffb3c9" opacity=".8"/><ellipse cx="82" cy="82" rx="7" ry="4.5" fill="#ffb3c9" opacity=".8"/>
+      ${happy ? `<path d="M55 80 q5 5 10 0" stroke="#5b3a48" stroke-width="2.5" fill="none" stroke-linecap="round"/>` : `<path d="M55 84 q5 -4 10 0" stroke="#5b3a48" stroke-width="2.5" fill="none" stroke-linecap="round"/>`}
+      <g transform="translate(84 46) rotate(18)"><path d="M0 0 l-14 -9 v18 z" fill="#ed83a6"/><path d="M0 0 l14 -9 v18 z" fill="#ed83a6"/><circle r="4.5" fill="#c64775"/></g>
+    </svg>`;
+  };
+  const hearts = () => {
+    const box = document.createElement("div"); box.className = "burst";
+    box.innerHTML = [...Array(12)].map((_, i) => `<span style="--x:${Math.round((Math.random() - 0.5) * 260)}px;--d:${(i * 0.04).toFixed(2)}s">${["♥", "♡", "✿"][i % 3]}</span>`).join("");
+    document.body.appendChild(box); setTimeout(() => box.remove(), 1400);
+  };
+
   // ---------- progress ----------
   let prog = store.get("hr:prog", {});
   let prefs = Object.assign({ style: "clean", topics: Object.keys(TOPICS), quick: true, extras: false }, store.get("hr:prefs", {}));
@@ -82,7 +104,7 @@
       <p class="hint">${opts.her && !done ? `The right answer${multi ? "s are" : " is"} marked ✓. Don’t tell him (yet).` : multi ? "Choose all that apply." : "Choose all that apply (this one has one answer)."}</p>
       <div class="opts">${q.o.map((o, i) => `<button type="button" class="opt${optCls(i)}" data-opt="${i}" ${done || opts.her ? "disabled" : ""}><span class="ol">${L(i)}</span><span>${esc(o)}</span>${opts.her && !done && q.a.includes(i) ? `<span class="ok">✓</span>` : ""}</button>`).join("")}</div>
       ${done ? `
-        <div class="verdict ${ok ? "good" : "bad"}">${ok ? "Correct ✓" : `Not quite. Answer: ${q.a.map(L).join(" + ")}`}</div>
+        <div class="verdict ${ok ? "good" : "bad"}">${mochi(ok ? "" : "sad", 54)}<span>${ok ? "Yay, correct! ♡" : `Oopsie. It’s ${q.a.map(L).join(" + ")}`}</span></div>
         ${quick ? `<p class="answer">✓ ${q.a.map((i) => `<b>${L(i)}</b> ${esc(q.o[i])}`).join("<br>✓ ")}</p>` : `<p class="why">${esc(q.why)}</p>`}
         ${q.key ? `<p class="keynote">📋 ${esc(q.key)}</p>` : ""}
         ${hook && !quick ? `<p class="hook">${opts.her ? "Say this: " : "💡 "}${esc(hook)}</p>` : ""}` : opts.her && hook && !quick ? `<p class="hook">After he answers, say: ${esc(hook)}</p>` : ""}`;
@@ -104,8 +126,9 @@
     const all = QS.filter(inPlay), tot = all.length, m = all.filter((q) => mastered(q.id)).length, seen = all.filter((q) => rec(q.id).seen).length;
     app.innerHTML = `
       <main class="wrap">
-        <p class="meta">Physiology · hormones · MCQ</p>
-        <h1>Hormone Rush</h1>
+        <div class="hero"><span class="hh">♥</span>${mochi("", 120)}<span class="hh">♥</span></div>
+        <h1 class="title">Hormone Rush ♡</h1>
+        <p class="meta">physiology · hormones · just us two ✿</p>
         <p class="lede">All the hormone MCQs from your question banks, answers checked. Get each one right twice in a row and it’s mastered. Wrong ones come back a few questions later until they stick.</p>
         <div class="kpis"><div><b>${m}/${tot}</b><span>mastered</span></div><div><b>${seen}/${tot}</b><span>seen</span></div></div>
         <div class="seg" role="group" aria-label="Style">
@@ -121,9 +144,9 @@
         }).join("")}</div>
         <div class="row"><button class="btn small ghost" data-all>All</button><button class="btn small ghost" data-none>None</button></div>
         <div class="actions">
-          <button class="btn" data-go="cram" ${prefs.topics.length ? "" : "disabled"}>⚡ Cram: flashcards (fastest)</button>
-          <button class="btn" data-go="solo" ${prefs.topics.length ? "" : "disabled"}>Quiz solo</button>
-          <button class="btn" data-go="call" ${prefs.topics.length ? "" : "disabled"}>Study on call</button>
+          <button class="btn" data-go="cram" ${prefs.topics.length ? "" : "disabled"}>✿ Flashcards (fastest)</button>
+          <button class="btn" data-go="solo" ${prefs.topics.length ? "" : "disabled"}>Quiz me ♡</button>
+          <button class="btn love" data-go="call" ${prefs.topics.length ? "" : "disabled"}>Study together on call ♥</button>
           <button class="btn ghost" data-go="weak" ${prefs.topics.length ? "" : "disabled"}>Only what I haven’t mastered</button>
         </div>
         <p class="hint">Tonight: ⚡ Cram once through (≈ 25 min), then Quiz or Study on call until it’s all ✓. The app tells you to sleep after 60 minutes.</p>
@@ -156,7 +179,7 @@
     };
     const finish = () => {
       clearInterval(timer);
-      app.innerHTML = `<main class="wrap">${statsBar(S)}<h1>Done 🔥</h1><p class="lede">${S.right} of ${S.answered} right in ${clock((Date.now() - S.t0) / 1000)}. Go again with “Only what I haven’t mastered” until everything is ✓.</p><div class="actions"><button class="btn" data-home>Home</button></div></main>`;
+      app.innerHTML = `<main class="wrap">${statsBar(S)}<div class="hero">${mochi("", 110)}</div><h1 class="title">All done! ♡</h1><p class="lede">${S.right} of ${S.answered} right in ${clock((Date.now() - S.t0) / 1000)}. Go again with “Only what I haven’t mastered” until everything is ✓.</p><div class="actions"><button class="btn" data-home>Home</button></div></main>`;
     };
     app.onclick = (ev) => {
       if (ev.target.closest("[data-home]")) return home();
@@ -165,7 +188,7 @@
       if (ev.target.closest("[data-submit]")) {
         const id = S.queue[S.i], ok = sameSet(S.picks, BYID[id].a);
         S.submitted = true; S.answered++; if (ok) S.right++;
-        requeue(S, id, ok); record(id, ok); return draw();
+        requeue(S, id, ok); record(id, ok); draw(); if (ok) hearts(); return;
       }
       if (ev.target.closest("[data-next]")) { S.i++; S.picks = []; S.submitted = false; return draw(); }
     };
@@ -201,7 +224,7 @@
     const draw = () => {
       if (S.i >= S.queue.length) {
         clearInterval(timer);
-        app.innerHTML = `<main class="wrap"><h1>Cram done 🔥</h1><p class="lede">${total} questions in ${clock((Date.now() - S.t0) / 1000)}. Now test yourself: Quiz solo or Study on call. Stop by the time it says sleep.</p><div class="actions"><button class="btn" data-quiz>Quiz now</button><button class="btn ghost" data-home>Home</button></div></main>`;
+        app.innerHTML = `<main class="wrap"><div class="hero">${mochi("", 110)}</div><h1 class="title">Cram done! ✿</h1><p class="lede">${total} questions in ${clock((Date.now() - S.t0) / 1000)}. Now test yourself: Quiz solo or Study on call. Stop by the time it says sleep.</p><div class="actions"><button class="btn" data-quiz>Quiz now</button><button class="btn ghost" data-home>Home</button></div></main>`;
         return;
       }
       const q = BYID[S.queue[S.i]];
@@ -222,7 +245,7 @@
       if (ev.target.closest("[data-quiz]")) return solo(true);
       if (ev.target.closest("[data-show]")) { S.shown = true; return draw(); }
       const id = S.queue[S.i];
-      if (ev.target.closest("[data-knew]")) { S.done.add(id); S.knew++; S.i++; S.shown = false; return draw(); }
+      if (ev.target.closest("[data-knew]")) { S.done.add(id); S.knew++; S.i++; S.shown = false; if (S.knew % 5 === 0) hearts(); return draw(); }
       if (ev.target.closest("[data-again]")) { S.again++; S.queue.splice(Math.min(S.i + 4, S.queue.length), 0, id); S.i++; S.shown = false; return draw(); }
     };
     startTick(() => { const t = app.querySelector(".st-time"); if (t) t.textContent = clock((Date.now() - S.t0) / 1000); sleepGuard(S.t0); });
@@ -277,13 +300,13 @@
       let inner = "";
       if (err) inner = `<p class="callout">${esc(err)}</p><div class="actions"><button class="btn" data-home>Home</button></div>`;
       else if (!H) inner = `<p class="hint">Opening the room…</p>`;
-      else if (!host && !joined) inner = `<h1>Quiz him on hormones</h1>
+      else if (!host && !joined) inner = `<div class="hero">${mochi("", 110)}</div><h1 class="title">Quiz him, cutie ♡</h1>
         <p class="lede">He answers on his phone. You see the right answers (✓) and his picks live. After he checks, read him the reason and the memory line, then press <b>Next</b>. Wrong ones come back later.${H.style === "spicy" ? " Spicy mode, 18+." : ""}</p>
         <form class="join" autocomplete="off"><input id="nm" maxlength="20" placeholder="Your name"><button class="btn" type="submit">Join</button></form>`;
       else if (host && !(P && P.name)) inner = `<h1>Room ${code}</h1><p class="lede">Send her this link. You start when she joins.</p>
         <div class="linkrow"><input readonly value="${esc(link)}"><button class="btn" data-share>${navigator.share ? "Send link" : "Copy"}</button></div>
         <p class="hint">Waiting for her…</p><div class="actions"><button class="btn ghost" data-home>Cancel</button></div>`;
-      else if (H.i >= H.queue.length) inner = `${statsBar(H)}<h1>Done 🔥</h1><p class="lede">${H.right} of ${H.answered} right in ${clock((Date.now() - H.t0) / 1000)}.</p>${host ? `<div class="actions"><button class="btn" data-home>Home</button></div>` : ""}`;
+      else if (H.i >= H.queue.length) inner = `${statsBar(H)}<div class="hero">${mochi("", 110)}</div><h1 class="title">All done, you two! ♡</h1><p class="lede">${H.right} of ${H.answered} right in ${clock((Date.now() - H.t0) / 1000)}.</p>${host ? `<div class="actions"><button class="btn" data-home>Home</button></div>` : ""}`;
       else {
         const who = host ? `${esc(P.name)} is in` : `${esc(H.name || "He")} is answering`;
         inner = `<p class="who">${who} · Room ${code}</p>${statsBar(H)}${qCard(H, { her: !host })}
@@ -305,7 +328,11 @@
       ((other && other.msgs) || []).forEach((m) => { if (!seen.has(m.id)) { seen.add(m.id); if (lastSnap) toast((host ? (P && P.name) || "Her" : "Him") + ": " + m.text); } });
       if (host && P && (P.next || 0) > (H.seenNext || 0)) { H.seenNext = P.next; if (H.submitted) next(); }
       const snap = JSON.stringify(host ? [P && P.name] : [H && H.i, H && H.picks, H && H.submitted, H && H.answered]);
-      if (snap !== lastSnap) { lastSnap = snap || "x"; draw(); }
+      if (snap !== lastSnap) {
+        const wasAnswered = lastSnap && !host ? JSON.parse(lastSnap)[3] : null;
+        lastSnap = snap || "x"; draw();
+        if (!host && H && H.submitted && wasAnswered !== null && H.answered > wasAnswered && sameSet(H.picks, BYID[H.queue[H.i]].a)) hearts();
+      }
     }).catch(() => {});
 
     app.onclick = (ev) => {
@@ -318,7 +345,7 @@
         if (ev.target.closest("[data-submit]")) {
           const id = H.queue[H.i], ok = sameSet(H.picks, BYID[id].a);
           H.submitted = true; H.answered++; if (ok) H.right++;
-          requeue(H, id, ok); record(id, ok); put(); return draw();
+          requeue(H, id, ok); record(id, ok); put(); draw(); if (ok) hearts(); return;
         }
         if (ev.target.closest("[data-next]")) return next();
       } else if (ev.target.closest("[data-next]")) {
