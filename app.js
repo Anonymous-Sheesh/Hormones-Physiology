@@ -73,9 +73,25 @@
 
   // ---------- nudges ----------
   const NUDGES = {
-    clean: ["Phones down, brains on 📚", "Read the WHOLE question. 'NOT' is hiding in there.", "Say the reason out loud, not just the letter.", "Less chat, more hormones.", "Exam is tomorrow. Lock in.", "Two in a row = mastered. Go."],
-    spicy: ["Stop e-sexing and study 📚", "Horny later. Hormones now.", "The only hormone you need tonight is the one on the screen.", "Pants on. Aldosterone first.", "Sexting detected. Back to the pituitary.", "Get it right twice, then you can get it on twice 😏", "Prolactin kills your sex drive. So does failing tomorrow."]
+    clean: ["Phones down, brains on 📚", "Read the WHOLE question. 'NOT' is hiding in there.", "Say the reason out loud, not just the letter.", "Less chat, more hormones.", "Exam is TODAY. Lock in.", "Two in a row = mastered. Go.",
+      "Stop yapping. Start tapping.", "The chat box is not on the exam.", "You can talk after the exam. For hours. Promise.", "Cute couple. Unfinished deck. Fix one of those.",
+      "Is this a study date or a date date? Study.", "Every message you send costs one hormone.", "Insulin lowers sugar. You're lowering your grade. Next question.",
+      "Cortisol is the stress hormone. Want more of it in the exam? Then study.", "No more 'hehe'. More 'hormone'.", "Professor isn't going to ask about your weekend plans.",
+      "Plot twist: the exam is in a few hours.", "Quick! What does PTH do to calcium? See, you need this.", "Eyes on the green answers, not each other.", "Brain open, mouth closed. Go."],
+    spicy: ["Stop e-sexting and study 📚", "Horny later. Hormones now.", "The only hormone you need tonight is the one on the screen.", "Pants on. Aldosterone first.", "Sexting detected. Back to the pituitary.", "Get it right twice, then you can get it on twice 😏", "Prolactin kills your sex drive. So does failing today.",
+      "Stop yapping about sex and study, you absolute gremlins.", "Testosterone's on the exam. Yours isn't. Sit down.", "Oxytocin is the cuddle hormone. You get NONE until this deck is done.",
+      "Put the phone sex on pause. Put the pituitary on play.", "She's not taking the exam for you. Focus.", "Less 'what are you wearing', more 'what does ADH do'.",
+      "If you two flirted as hard as you studied, you'd already be a doctor.", "Your libido is not a hormone on this exam. Move.", "LH spikes before ovulation. Your grade is spiking downward. Study.",
+      "Dirty talk is allowed only if it's about glucagon.", "Estrogen, progesterone, FSH, LH. That's the only foreplay tonight.", "Keep it in your pants and the answers in your head.",
+      "Horny AND failing is crazy work. Pick one. Pick studying.", "She'll still be hot after the exam. The exam won't wait.", "Every sext = one question you'll get wrong. Choose wisely.",
+      "Cortisol at 2am because you were yapping about sex? Couldn't be me. Study.", "Bro is down bad and down marks. Fix it."]
   };
+  const bag = {};
+  const pickNudge = (st) => {
+    if (!bag[st] || !bag[st].length) bag[st] = NUDGES[st].slice().sort(() => Math.random() - 0.5);
+    return bag[st].pop();
+  };
+  const NUDGE_EVERY = 120000;
   const ROASTS = {
     clean: ["{m} minutes gone and only {n} mastered. Speed up, legend.", "{m} minutes. The exam won't wait. Next question, now.", "{m} minutes. Even the pituitary is bored. Lock in."],
     spicy: ["{m} minutes gone and only {n} mastered. Don't tell me you still haven't learnt shit.", "{m} minutes. She could've finished twice by now. Answer the damn question.", "{m} minutes. Pathetic. Hormones in, phone down."]
@@ -204,7 +220,7 @@
       sleepGuard(S.t0);
       const mins = Math.floor((Date.now() - S.t0) / 600000);
       if (mins > roasts) { roasts = mins; lastNudge = Date.now(); const r = ROASTS[S.style]; toast("⏰ " + r[Math.min(mins - 1, r.length - 1)].replace("{m}", mins * 10).replace("{n}", QS.filter((q) => mastered(q.id)).length), "nudge"); }
-      else if (Date.now() - lastNudge > 180000) { lastNudge = Date.now(); const n = NUDGES[S.style]; toast(n[Math.floor(Math.random() * n.length)], "nudge"); }
+      else if (Date.now() - lastNudge > NUDGE_EVERY) { lastNudge = Date.now(); toast(pickNudge(S.style), "nudge"); }
     });
     draw();
   };
@@ -299,6 +315,12 @@
       const m = { id: Date.now() + ":" + Math.random().toString(36).slice(2, 6), text: String(text).slice(0, 120) };
       mine.msgs = [...(mine.msgs || []), m].slice(-12); seen.add(m.id); put(); toast("You: " + text, "mine");
     };
+    // look mode: both of you press "Got it" before it moves on
+    const readyN = () => (H && H.hReady === H.i ? 1 : 0) + (P && P.ready === H.i ? 1 : 0);
+    const readyBtn = (mine, other) => mine
+      ? `<button class="btn ready" disabled>♡ ${readyN()}/2 pressed · waiting for ${other}…</button>`
+      : `<button class="btn" data-next>Got it ♡ <span class="rc">${readyN()}/2</span></button>`;
+    const bothReady = () => H && H.look && H.hReady === H.i && P && P.ready === H.i;
     const next = () => { if (!H) return; if (H.look) H.answered++; H.i++; H.picks = []; H.submitted = !!H.look; put(); draw(); };
     const reactions = host ? ["❤️", "😘", "🥵", "Hint please", "Got it", "Explain"] : ["😏", "🔥", "💋", "🙄", "Good boy", "Read it again", "Think!"];
 
@@ -318,8 +340,8 @@
         const who = host ? `${esc(P.name)} is in` : H.look ? `you & ${esc(H.name || "him")}` : `${esc(H.name || "He")} is answering`;
         inner = `<p class="who">${who} · Room ${code}</p>${statsBar(H)}${qCard(H, { her: !host })}
           <div class="actions">${host
-            ? H.look ? `<button class="btn" data-next>Got it, next ♡</button>` : H.submitted ? `<button class="btn" data-next>Next</button>` : `<button class="btn" data-submit ${H.picks.length ? "" : "disabled"}>Check</button>`
-            : H.submitted ? `<button class="btn" data-next>${H.look ? "He’s got it, next ♡" : "Next question"}</button>` : `<span class="hint">Waiting for his answer… picks so far: ${H.picks.length ? H.picks.map(L).join(", ") : "none"}</span>`}</div>`;
+            ? H.look ? readyBtn(H.hReady === H.i, "her") : H.submitted ? `<button class="btn" data-next>Next</button>` : `<button class="btn" data-submit ${H.picks.length ? "" : "disabled"}>Check</button>`
+            : H.look ? readyBtn(P && P.ready === H.i, "him") : H.submitted ? `<button class="btn" data-next>Next question</button>` : `<span class="hint">Waiting for his answer… picks so far: ${H.picks.length ? H.picks.map(L).join(", ") : "none"}</span>`}</div>`;
       }
       const chat = H && (host ? P && P.name : joined) && !err;
       app.innerHTML = `<main class="wrap room">${inner}</main>${chat ? `<div class="chat"><div class="react">${reactions.map((r) => `<button type="button" data-say="${esc(r)}">${esc(r)}</button>`).join("")}</div><form class="msgf" autocomplete="off"><input id="msg" maxlength="120" placeholder="Say something…"><button class="btn small" type="submit">Send</button></form></div>` : ""}`;
@@ -333,8 +355,9 @@
       else P = r.p;
       const other = host ? r.p : r.h;
       ((other && other.msgs) || []).forEach((m) => { if (!seen.has(m.id)) { seen.add(m.id); if (lastSnap) toast((host ? (P && P.name) || "Her" : "Him") + ": " + m.text); } });
-      if (host && P && (P.next || 0) > (H.seenNext || 0)) { H.seenNext = P.next; if (H.submitted) next(); }
-      const snap = JSON.stringify(host ? [P && P.name] : [H && H.i, H && H.picks, H && H.submitted, H && H.answered]);
+      if (host && P && !H.look && (P.next || 0) > (H.seenNext || 0)) { H.seenNext = P.next; if (H.submitted) next(); }
+      if (host && bothReady()) { next(); hearts(); }
+      const snap = JSON.stringify(host ? [P && P.name, P && P.ready] : [H && H.i, H && H.picks, H && H.submitted, H && H.answered, H && H.hReady]);
       if (snap !== lastSnap) {
         const wasAnswered = lastSnap && !host ? JSON.parse(lastSnap)[3] : null;
         lastSnap = snap || "x"; draw();
@@ -354,7 +377,14 @@
           H.submitted = true; H.answered++; if (ok) H.right++;
           requeue(H, id, ok); record(id, ok); put(); draw(); if (ok) hearts(); return;
         }
-        if (ev.target.closest("[data-next]")) return next();
+        if (ev.target.closest("[data-next]")) {
+          if (!H.look) return next();
+          H.hReady = H.i; put();
+          if (bothReady()) { next(); hearts(); } else draw();
+          return;
+        }
+      } else if (ev.target.closest("[data-next]") && H && H.look) {
+        P.ready = H.i; put(); draw();
       } else if (ev.target.closest("[data-next]")) {
         P.next = (P.next || 0) + 1; put();
         const b = ev.target.closest("[data-next]"); b.disabled = true; b.textContent = "Next…";
@@ -373,7 +403,7 @@
       if (H && P && P.name && H.i < H.queue.length) {
         const mins = Math.floor((Date.now() - H.t0) / 600000), st = H.style || "clean";
         if (mins > roasts) { roasts = mins; lastNudge = Date.now(); const r = ROASTS[st]; toast("⏰ " + r[Math.min(mins - 1, r.length - 1)].replace("{m}", mins * 10).replace("{n}", QS.filter((q) => mastered(q.id)).length), "nudge"); }
-        else if (Date.now() - lastNudge > 180000) { lastNudge = Date.now(); const n = NUDGES[st]; toast(n[Math.floor(Math.random() * n.length)], "nudge"); }
+        else if (Date.now() - lastNudge > NUDGE_EVERY) { lastNudge = Date.now(); toast(pickNudge(st), "nudge"); }
       }
       if (tick % 2 === 0 && document.visibilityState === "visible") poll();
     });
